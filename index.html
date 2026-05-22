@@ -1,0 +1,720 @@
+<<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Internet Health Dashboard</title>
+
+    <style>
+        :root{
+            --bg: #0f172a;
+            --bg-soft: #111827;
+            --card: rgba(255,255,255,0.08);
+            --card-border: rgba(255,255,255,0.12);
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --primary: #38bdf8;
+            --primary-2: #6366f1;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --table-head: rgba(255,255,255,0.08);
+            --shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        body.light{
+            --bg: #f8fafc;
+            --bg-soft: #e2e8f0;
+            --card: rgba(255,255,255,0.8);
+            --card-border: rgba(15,23,42,0.08);
+            --text: #0f172a;
+            --muted: #64748b;
+            --primary: #0ea5e9;
+            --primary-2: #4f46e5;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --table-head: rgba(15,23,42,0.05);
+            --shadow: 0 10px 30px rgba(2,6,23,0.08);
+        }
+
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body{
+            font-family: Inter, Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(56,189,248,0.15), transparent 30%),
+                radial-gradient(circle at top right, rgba(99,102,241,0.16), transparent 25%),
+                linear-gradient(135deg, var(--bg), var(--bg-soft));
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        body{
+            padding: 28px;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container{
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .topbar{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .title-wrap h1{
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 6px;
+        }
+
+        .title-wrap p{
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .top-actions{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .chip,
+        .theme-btn{
+            border: 1px solid var(--card-border);
+            background: var(--card);
+            color: var(--text);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 14px;
+            padding: 10px 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .theme-btn{
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .theme-btn:hover{
+            transform: translateY(-2px);
+        }
+
+        .grid{
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 18px;
+        }
+
+        .card{
+            grid-column: span 12;
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 22px;
+            padding: 22px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .card:hover{
+            transform: translateY(-3px);
+        }
+
+        .metric-card{
+            grid-column: span 3;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before{
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent 45%);
+            pointer-events: none;
+        }
+
+        .metric-label{
+            color: var(--muted);
+            font-size: 0.92rem;
+            margin-bottom: 12px;
+        }
+
+        .metric-value{
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .metric-sub{
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .good{ color: var(--success); }
+        .bad{ color: var(--danger); }
+        .warn{ color: var(--warning); }
+        .accent{ color: var(--primary); }
+
+        .wide{
+            grid-column: span 8;
+        }
+
+        .side{
+            grid-column: span 4;
+        }
+
+        .card-title{
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        .progress-wrap{
+            margin-top: 10px;
+        }
+
+        .progress-head{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .progress-bar{
+            width: 100%;
+            height: 14px;
+            background: rgba(148,163,184,0.18);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill{
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-2));
+            width: 0%;
+            transition: width 1s ease;
+        }
+
+        .status-box{
+            display: grid;
+            gap: 12px;
+        }
+
+        .status-row{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--card-border);
+        }
+
+        .status-badge{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .status-up{
+            background: rgba(34,197,94,0.14);
+            color: var(--success);
+        }
+
+        .status-down{
+            background: rgba(239,68,68,0.14);
+            color: var(--danger);
+        }
+
+        .toolbar{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-left,
+        .toolbar-right{
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .control{
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            outline: none;
+            min-width: 180px;
+        }
+
+        table{
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 16px;
+        }
+
+        thead th{
+            background: var(--table-head);
+            color: var(--text);
+            font-size: 0.92rem;
+            text-align: left;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        tbody td{
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text);
+        }
+
+        tbody tr{
+            transition: background 0.2s ease;
+        }
+
+        tbody tr:hover{
+            background: rgba(255,255,255,0.04);
+        }
+
+        .latency-pill{
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+
+        .latency-fast{
+            background: rgba(34,197,94,0.14);
+            color: var(--success);
+        }
+
+        .latency-medium{
+            background: rgba(245,158,11,0.14);
+            color: var(--warning);
+        }
+
+        .latency-slow{
+            background: rgba(239,68,68,0.14);
+            color: var(--danger);
+        }
+
+        .empty-state{
+            text-align: center;
+            padding: 20px;
+            color: var(--muted);
+            display: none;
+        }
+
+        .footer-note{
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 0.88rem;
+            text-align: right;
+        }
+
+        canvas{
+            width: 100% !important;
+            max-height: 320px;
+        }
+
+        @media (max-width: 1100px){
+            .metric-card{ grid-column: span 6; }
+            .wide{ grid-column: span 12; }
+            .side{ grid-column: span 12; }
+        }
+
+        @media (max-width: 700px){
+            body{
+                padding: 16px;
+            }
+
+            .metric-card{ grid-column: span 12; }
+            .title-wrap h1{
+                font-size: 1.7rem;
+            }
+
+            .metric-value{
+                font-size: 1.7rem;
+            }
+
+            thead th, tbody td{
+                padding: 12px 10px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="topbar">
+            <div class="title-wrap">
+                <h1>Internet Connection Health Dashboard</h1>
+                <p>Real-time style monitoring overview for uptime, reliability, and latency trends.</p>
+            </div>
+
+            <div class="top-actions">
+                <div class="chip" id="clock">Loading time...</div>
+                <button class="theme-btn" onclick="toggleTheme()">Toggle Theme</button>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card metric-card">
+                <div class="metric-label">Total Records</div>
+                <div class="metric-value accent">{{ total_records }}</div>
+                <div class="metric-sub">All collected monitoring entries</div>
+            </div>
+
+            <div class="card metric-card">
+                <div class="metric-label">Up Count</div>
+                <div class="metric-value good">{{ up_count }}</div>
+                <div class="metric-sub">Successful connectivity checks</div>
+            </div>
+
+            <div class="card metric-card">
+                <div class="metric-label">Down Count</div>
+                <div class="metric-value bad">{{ down_count }}</div>
+                <div class="metric-sub">Detected connection failures</div>
+            </div>
+
+            <div class="card metric-card">
+                <div class="metric-label">Uptime Percentage</div>
+                <div class="metric-value">{{ uptime_percentage }}%</div>
+                <div class="metric-sub">Overall connection reliability score</div>
+            </div>
+
+            <div class="card wide">
+                <div class="card-title">Service Reliability Overview</div>
+
+                <div class="progress-wrap">
+                    <div class="progress-head">
+                        <span>Uptime Health</span>
+                        <strong id="uptimeText">{{ uptime_percentage }}%</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="uptimeBar"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px;">
+                    <div class="card-title" style="margin-bottom: 12px;">Latency Trend</div>
+                    <canvas id="latencyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card side">
+                <div class="card-title">Current Status Summary</div>
+
+                <div class="status-box">
+                    <div class="status-row">
+                        <span>Latest Status</span>
+                        <span id="latestStatusBadge" class="status-badge">Checking...</span>
+                    </div>
+
+                    <div class="status-row">
+                        <span>Average Latency</span>
+                        <strong id="avgLatency">--</strong>
+                    </div>
+
+                    <div class="status-row">
+                        <span>Fastest Latency</span>
+                        <strong id="minLatency">--</strong>
+                    </div>
+
+                    <div class="status-row">
+                        <span>Slowest Latency</span>
+                        <strong id="maxLatency">--</strong>
+                    </div>
+
+                    <div class="status-row">
+                        <span>Health Grade</span>
+                        <strong id="healthGrade">--</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="grid-column: span 12;">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <input type="text" id="searchInput" class="control" placeholder="Search timestamp or status..." />
+                        <select id="statusFilter" class="control">
+                            <option value="all">All Status</option>
+                            <option value="up">Up Only</option>
+                            <option value="down">Down Only</option>
+                        </select>
+                    </div>
+
+                    <div class="toolbar-right">
+                        <div class="chip">Recent Monitoring Logs</div>
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table id="logsTable">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                                <th>Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in logs %}
+                            <tr data-status="{{ row[1] | lower }}">
+                                <td>{{ row[0] }}</td>
+                                <td>
+                                    <span class="status-badge {% if row[1]|lower == 'up' %}status-up{% else %}status-down{% endif %}">
+                                        {{ row[1] }}
+                                    </span>
+                                </td>
+                                <td class="latency-cell">{{ row[2] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="emptyState" class="empty-state">No logs match your current filter.</div>
+                <div class="footer-note">Dashboard UI enhanced with responsive cards, filters, and trend visualization.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme(){
+            document.body.classList.toggle('light');
+            localStorage.setItem('dashboard-theme',
+                document.body.classList.contains('light') ? 'light' : 'dark'
+            );
+        }
+
+        (function applySavedTheme(){
+            const saved = localStorage.getItem('dashboard-theme');
+            if(saved === 'light'){
+                document.body.classList.add('light');
+            }
+        })();
+
+        function updateClock(){
+            const now = new Date();
+            const formatted = now.toLocaleString();
+            document.getElementById('clock').textContent = formatted;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        const uptime = parseFloat("{{ uptime_percentage }}") || 0;
+        document.getElementById("uptimeBar").style.width = Math.max(0, Math.min(100, uptime)) + "%";
+
+        const rows = Array.from(document.querySelectorAll("#logsTable tbody tr"));
+        const latencyValues = [];
+
+        rows.forEach(row => {
+            const latencyCell = row.querySelector(".latency-cell");
+            const raw = latencyCell.textContent.trim();
+
+            let value = parseFloat(raw.replace(/[^\d.]/g, ""));
+            if (!isNaN(value)) {
+                latencyValues.push(value);
+
+                let className = "latency-pill latency-fast";
+                if (value > 100 && value <= 200) className = "latency-pill latency-medium";
+                if (value > 200) className = "latency-pill latency-slow";
+
+                latencyCell.innerHTML = `<span class="${className}">${raw}</span>`;
+            }
+        });
+
+        if(rows.length > 0){
+            const latestStatus = rows[0].dataset.status || "unknown";
+            const badge = document.getElementById("latestStatusBadge");
+            badge.textContent = latestStatus.toUpperCase();
+            badge.className = "status-badge " + (latestStatus === "up" ? "status-up" : "status-down");
+        }
+
+        function setLatencyStats(){
+            const avgEl = document.getElementById("avgLatency");
+            const minEl = document.getElementById("minLatency");
+            const maxEl = document.getElementById("maxLatency");
+            const gradeEl = document.getElementById("healthGrade");
+
+            if(latencyValues.length === 0){
+                avgEl.textContent = "--";
+                minEl.textContent = "--";
+                maxEl.textContent = "--";
+                gradeEl.textContent = "N/A";
+                return;
+            }
+
+            const avg = latencyValues.reduce((a,b) => a+b, 0) / latencyValues.length;
+            const min = Math.min(...latencyValues);
+            const max = Math.max(...latencyValues);
+
+            avgEl.textContent = avg.toFixed(1) + " ms";
+            minEl.textContent = min.toFixed(1) + " ms";
+            maxEl.textContent = max.toFixed(1) + " ms";
+
+            let grade = "Excellent";
+            if (uptime < 99 || avg > 100) grade = "Good";
+            if (uptime < 95 || avg > 180) grade = "Warning";
+            if (uptime < 90 || avg > 250) grade = "Critical";
+
+            gradeEl.textContent = grade;
+            gradeEl.style.color =
+                grade === "Excellent" ? "var(--success)" :
+                grade === "Good" ? "var(--primary)" :
+                grade === "Warning" ? "var(--warning)" :
+                "var(--danger)";
+        }
+
+        setLatencyStats();
+
+        const searchInput = document.getElementById("searchInput");
+        const statusFilter = document.getElementById("statusFilter");
+        const emptyState = document.getElementById("emptyState");
+
+        function filterTable(){
+            const query = searchInput.value.toLowerCase();
+            const status = statusFilter.value;
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowStatus = row.dataset.status;
+
+                const matchesSearch = text.includes(query);
+                const matchesStatus = status === "all" || rowStatus === status;
+
+                const show = matchesSearch && matchesStatus;
+                row.style.display = show ? "" : "none";
+
+                if(show) visibleCount++;
+            });
+
+            emptyState.style.display = visibleCount === 0 ? "block" : "none";
+        }
+
+        searchInput.addEventListener("input", filterTable);
+        statusFilter.addEventListener("change", filterTable);
+
+        function drawLatencyChart(){
+            const canvas = document.getElementById("latencyChart");
+            const ctx = canvas.getContext("2d");
+
+            const parentWidth = canvas.parentElement.clientWidth;
+            canvas.width = parentWidth;
+            canvas.height = 300;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if(latencyValues.length === 0){
+                ctx.fillStyle = "#94a3b8";
+                ctx.font = "16px Arial";
+                ctx.fillText("No latency data available", 20, 40);
+                return;
+            }
+
+            const padding = 40;
+            const w = canvas.width - padding * 2;
+            const h = canvas.height - padding * 2;
+            const maxVal = Math.max(...latencyValues, 50);
+            const minVal = Math.min(...latencyValues, 0);
+
+            // Grid lines
+            ctx.strokeStyle = "rgba(148,163,184,0.18)";
+            ctx.lineWidth = 1;
+            for(let i = 0; i <= 4; i++){
+                const y = padding + (h / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + w, y);
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = "rgba(148,163,184,0.35)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, padding + h);
+            ctx.lineTo(padding + w, padding + h);
+            ctx.stroke();
+
+            // Line
+            ctx.beginPath();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#38bdf8";
+
+            latencyValues.forEach((val, i) => {
+                const x = padding + (i * (w / Math.max(latencyValues.length - 1, 1)));
+                const y = padding + h - ((val - minVal) / Math.max(maxVal - minVal, 1)) * h;
+                if(i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Fill
+            ctx.lineTo(padding + w, padding + h);
+            ctx.lineTo(padding, padding + h);
+            ctx.closePath();
+            const gradient = ctx.createLinearGradient(0, padding, 0, padding + h);
+            gradient.addColorStop(0, "rgba(56,189,248,0.35)");
+            gradient.addColorStop(1, "rgba(56,189,248,0.02)");
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Points
+            latencyValues.forEach((val, i) => {
+                const x = padding + (i * (w / Math.max(latencyValues.length - 1, 1)));
+                const y = padding + h - ((val - minVal) / Math.max(maxVal - minVal, 1)) * h;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#6366f1";
+                ctx.fill();
+            });
+
+            // Labels
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--muted');
+            ctx.font = "12px Arial";
+            ctx.fillText(`${maxVal.toFixed(0)} ms`, 8, padding + 4);
+            ctx.fillText(`${minVal.toFixed(0)} ms`, 8, padding + h);
+        }
+
+        drawLatencyChart();
+        window.addEventListener("resize", drawLatencyChart);
+    </script>
+</body>
+</html>
